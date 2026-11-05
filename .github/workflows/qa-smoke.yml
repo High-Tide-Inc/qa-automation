@@ -1,0 +1,53 @@
+name: QA smoke tests
+
+on:
+  pull_request:            # quality gate on every PR (QA Test Strategy 11.1)
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 11 * * *'   # daily, 11:00 UTC
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'Store URL to test'
+        default: 'https://www.smokecartel.com'
+
+concurrency:
+  group: qa-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE_URL: ${{ github.event.inputs.site_url || 'https://www.smokecartel.com' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run smoke tests
+        run: npx playwright test --grep @smoke
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - name: Email on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: 'QA smoke tests FAILED - ${{ env.SITE_URL }}'
+          to: ${{ secrets.QA_ALERT_EMAILS }}
+          from: High Tide QA Automation <${{ secrets.SMTP_USER }}>
+          body: 'Smoke tests failed for ${{ env.SITE_URL }}. Report: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
