@@ -29,7 +29,7 @@ npm run report                                   # open the HTML report
 ```
 
 ## CI secrets (GitHub → Settings → Secrets → Actions)
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `QA_ALERT_EMAILS` (comma-separated). Alerts go by email, as agreed in the review.
+`RESEND_API_KEY`, `QA_ALERT_FROM` (e.g. `High Tide QA <qa@your-verified-domain>`), `QA_ALERT_EMAILS` (comma-separated). Failure alerts are sent through the [Resend](https://resend.com) email API.
 
 ## Backend (Laravel) tests
 Per QA feedback (Section 15), backend business logic, API validation, authorisation and Laravel Passport / OAuth2 tests belong in the **Laravel application repositories** using **PHPUnit or Pest**. This suite covers the storefront (frontend and public APIs).
